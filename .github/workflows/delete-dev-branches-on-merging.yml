@@ -1,0 +1,24 @@
+name: Delete dev-prefixed branch after PR merge
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+
+jobs:
+  delete_dev_branches_on_merging:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+    - name: Delete dev-prefixed branch
+      uses: actions/github-script@v3
+      with:
+        github-token: ${{github.token}}
+        script: |
+          const branchToDelete = 'dev-' + '${{ github.head_ref }}';
+          console.log(`Deleting branch: ${branchToDelete}`);
+          await github.git.deleteRef({
+            owner: github.repository.owner.login,
+            repo: github.repository.name,
+            ref: `heads/${branchToDelete}`,
+          });
