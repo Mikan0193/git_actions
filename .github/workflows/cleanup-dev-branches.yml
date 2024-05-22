@@ -3,6 +3,7 @@ name: Cleanup Old Dev Branches
 on:
   schedule:
     - cron: '0 19 * * *'
+  workflow_dispatch:
 
 jobs:
   delete-old-dev-branches:
