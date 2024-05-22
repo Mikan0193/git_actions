@@ -2,7 +2,6 @@ name: Cleanup Old Dev Branches
 
 on:
   schedule:
-    # 毎日午前0時 (UTC) に実行
     - cron: '0 19 * * *'
 
 jobs:
