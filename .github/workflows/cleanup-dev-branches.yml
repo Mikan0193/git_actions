@@ -1,0 +1,38 @@
+name: Cleanup Old Dev Branches
+
+on:
+  schedule:
+    # 毎日午前0時 (UTC) に実行
+    - cron: '0 19 * * *'
+
+jobs:
+  delete-old-dev-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Delete old branches starting with 'dev-'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCHES=$(git branch -r | grep 'origin/dev-' | sed 's/origin\///')
+
+          for branch in ${BRANCHES}; do
+            LAST_COMMIT_DATE=$(git log -1 --format="%ai" ${branch} | cut -d" " -f1)
+            LAST_COMMIT_TS=$(date -d "${LAST_COMMIT_DATE}" +%s)
+            WEEK_AGO_TS=$(date -d '-1 week' +%s)
+
+            if [ ${LAST_COMMIT_TS} -lt ${WEEK_AGO_TS} ]; then
+              DELETE_BRANCH=${branch#origin/}
+              echo "Deleting old branch: ${DELETE_BRANCH}"
+              # 安全のために'dry-run'を使用して削除確認、削除する際はこの行を削除
+              git push --delete origin ${DELETE_BRANCH} --dry-run
+              # 実際の削除を行う場合は上の行をコメントアウトし、以下行のコメントを解除
+              #git push --delete origin ${DELETE_BRANCH}
+            else
+              echo "Branch is not older than a week: ${branch}"
+            fi
+          done
