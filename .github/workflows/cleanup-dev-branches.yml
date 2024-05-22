@@ -21,17 +21,17 @@ jobs:
           BRANCHES=$(git branch -r | grep 'origin/dev-' | sed 's/origin\///')
 
           for branch in ${BRANCHES}; do
-            LAST_COMMIT_DATE=$(git log -1 --format="%ai" ${branch} | cut -d" " -f1)
+            FULL_BRANCH_NAME="refs/remotes/origin/${branch}"
+            LAST_COMMIT_DATE=$(git log -1 --format="%ai" "${FULL_BRANCH_NAME}" | cut -d" " -f1)
             LAST_COMMIT_TS=$(date -d "${LAST_COMMIT_DATE}" +%s)
-            WEEK_AGO_TS=$(date -d '-1 week' +%s)
+            WEEK_AGO_TS=$(date -d '-1 minutes' +%s)
 
             if [ ${LAST_COMMIT_TS} -lt ${WEEK_AGO_TS} ]; then
-              DELETE_BRANCH=${branch#origin/}
-              echo "Deleting old branch: ${DELETE_BRANCH}"
-              # 安全のために'dry-run'を使用して削除確認、削除する際はこの行を削除
-              git push --delete origin ${DELETE_BRANCH} --dry-run
-              # 実際の削除を行う場合は上の行をコメントアウトし、以下行のコメントを解除
-              #git push --delete origin ${DELETE_BRANCH}
+              echo "Deleting old branch: ${branch}"
+              # For safety, keep 'dry-run' during testing. Remove it when ready for actual deletion.
+              #git push --delete origin ${branch} --dry-run
+              # To actually delete the branch, comment out the above line and uncomment the line below
+              git push --delete origin ${branch}
             else
               echo "Branch is not older than a week: ${branch}"
             fi
