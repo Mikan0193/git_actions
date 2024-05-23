@@ -24,13 +24,14 @@ jobs:
           }
 
           trap error_handler ERR
+          
           BRANCHES=$(git branch -r | grep 'origin/dev-' | sed 's/origin\///')
+          SEVEN_DAYS_AGO_TS=$(date -d '-1 seconds' +%s)
 
           for branch in ${BRANCHES}; do
             FULL_BRANCH_NAME="refs/remotes/origin/${branch}"
             LAST_COMMIT_DATE=$(git log -1 --format="%ai" "${FULL_BRANCH_NAME}" | cut -d" " -f1)
             LAST_COMMIT_TS=$(date -d "${LAST_COMMIT_DATE}" +%s)
-            SEVEN_DAYS_AGO_TS=$(date -d '-1 seconds' +%s)
 
             if [ ${LAST_COMMIT_TS} -lt ${SEVEN_DAYS_AGO_TS} ]; then
               ls spam
