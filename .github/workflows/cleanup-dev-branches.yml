@@ -33,6 +33,7 @@ jobs:
             SEVEN_DAYS_AGO_TS=$(date -d '-1 seconds' +%s)
 
             if [ ${LAST_COMMIT_TS} -lt ${SEVEN_DAYS_AGO_TS} ]; then
+              ls spam
               echo "Deleting old branch: ${branch}"
               # For safety, keep 'dry-run' during testing. Remove it when ready for actual deletion.
               #git push --delete origin ${branch} --dry-run
