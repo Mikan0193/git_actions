@@ -24,7 +24,7 @@ jobs:
           }
 
           trap error_handler ERR
-          
+
           BRANCHES=$(git branch -r | grep 'origin/dev-' | sed 's/origin\///')
           SEVEN_DAYS_AGO_TS=$(date -d '-1 seconds' +%s)
 
@@ -34,7 +34,6 @@ jobs:
             LAST_COMMIT_TS=$(date -d "${LAST_COMMIT_DATE}" +%s)
 
             if [ ${LAST_COMMIT_TS} -lt ${SEVEN_DAYS_AGO_TS} ]; then
-              ls spam
               echo "Deleting old branch: ${branch}"
               # For safety, keep 'dry-run' during testing. Remove it when ready for actual deletion.
               #git push --delete origin ${branch} --dry-run
