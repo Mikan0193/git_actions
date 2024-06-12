@@ -1,46 +1,48 @@
-name: Cleanup Old Dev Branches
+name: Delete dev- branches after PR merge
 
 on:
-  schedule:
-    - cron: '0 19 * * *'
+  pull_request:
+    types: [closed]
   workflow_dispatch:
+    inputs:
+      branch:
+        description: '消去するブランチの名前を入力'
+        required: true
 
 jobs:
-  delete-old-dev-branches:
+  delete_branch:
     runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - name: Delete dev- prefixed branch
+        uses: actions/github-script@v6
         with:
-          fetch-depth: 0
-
-      - name: Delete old branches starting with 'dev-'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          function error_handler(){
-            echo "Deleting failed"
-          }
-
-          trap error_handler ERR
-
-          BRANCHES=$(git branch -r | grep 'origin/dev-' | sed 's/origin\///')
-          SEVEN_DAYS_AGO_TS=$(date -d '-1 seconds' +%s)
-
-          for branch in ${BRANCHES}; do
-            FULL_BRANCH_NAME="refs/remotes/origin/${branch}"
-            LAST_COMMIT_DATE=$(git log -1 --format="%ai" "${FULL_BRANCH_NAME}" | cut -d" " -f1)
-            LAST_COMMIT_TS=$(date -d "${LAST_COMMIT_DATE}" +%s)
-
-            if [ ${LAST_COMMIT_TS} -lt ${SEVEN_DAYS_AGO_TS} ]; then
-              echo "Deleting old branch: ${branch}"
-              # For safety, keep 'dry-run' during testing. Remove it when ready for actual deletion.
-              #git push --delete origin ${branch} --dry-run
-              # To actually delete the branch, comment out the above line and uncomment the line below
-              git push --delete origin ${branch}
-              echo "Old branch: ${branch} was successfully deleted."
-            else
-              echo "Branch is not older than 7 days: ${branch}"
-            fi
-          done
+          script: |
+            const { owner, repo } = context.repo;
+            const eventName = context.eventName;
+            const payload = context.payload;
+            // ブランチ名を設定
+            let branchName = '';
+            if (eventName === 'workflow_dispatch') {
+              branchName = payload.inputs.branch;
+            } else if (eventName === 'pull_request' ) {
+              branchName = 'dev-' + payload.pull_request.head.ref;
+            }
+            // 用心のためブランチ名が与えられているかを確認。
+            if (!branchName) {
+              console.log('Branch name is not provided. Skipping deletion.');
+              return;
+            }
+            // 消すブランチをログに記載。
+            console.log(`Deleting branch: ${branchName}`);
+            
+            try {
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: `heads/${branchName}`,
+              });
+            } catch (error) {
+              // 失敗時はエラーメッセージを出力
+              console.log(`Error deleting branch: ${error.message}`);
+            }
